@@ -12,5 +12,5 @@ app.use(Express.json());
 app.use(noteRoute);
 
 app.listen(port, () => {
-    console.log(`Note app listening on port ${port}`)
+    console.log(`Note apps listening on port ${port}`)
 })

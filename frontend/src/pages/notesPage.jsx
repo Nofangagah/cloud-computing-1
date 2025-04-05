@@ -134,7 +134,7 @@ const NotesPage = () => {
 
   return (
     <div className="min-h-screen bg-blue-800 flex items-center justify-center">
-    <div className="max-w-3xl mx-auto p-6 bg-gray-100 rounded-lg shadow-lg">
+    <div className="max-w-3xl mx-auto p-6 bg-gray-200 rounded-lg shadow-lg">
       <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">Notes App</h1>
       <form onSubmit={handleSubmit} className="mb-6 space-y-4 bg-white p-4 rounded-lg shadow-md">
         <input type="text" name="title" placeholder="Title" value={formData.title} onChange={handleChange} className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
