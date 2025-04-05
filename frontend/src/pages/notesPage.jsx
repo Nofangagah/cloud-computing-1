@@ -6,7 +6,7 @@ const NotesPage = () => {
   const [formData, setFormData] = useState({ title: "", description: "", category: "", date: "" });
   const [editId, setEditId] = useState(null);
 
-  const apiUrl = "http://localhost:3000";
+  const apiUrl = "https://notes-backend-130852023885.us-central1.run.app";
 
   const getAllNotes = async () => {
     try {
@@ -116,7 +116,7 @@ const NotesPage = () => {
   
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`${apiUrl}/notes/${id}`, { method: "DELETE" });
+        const response = await fetch(`${apiUrl}/Deletenotes/${id}`, { method: "DELETE" });
         if (!response.ok) throw new Error("Failed to delete note");
         fetchNotes();
         Swal.fire("Deleted!", "Your note has been deleted.", "success");
