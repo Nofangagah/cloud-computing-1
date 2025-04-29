@@ -1,5 +1,14 @@
 steps:
-  # Deploy ke App Engine (pastikan app.yaml ada di folder frontend)
+  - name: 'node'
+    dir: 'frontend'
+    entrypoint: 'npm'
+    args: ['install']
+
+  - name: 'node'
+    dir: 'frontend'
+    entrypoint: 'npm'
+    args: ['run', 'build']
+
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     dir: "frontend"
     entrypoint: "bash"
