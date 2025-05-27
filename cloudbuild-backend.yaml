@@ -1,5 +1,5 @@
 steps:
-  # Step: Write secret to file (inject secret ke /secrets/DOTENV)
+  # Step 1: Simpan secret ke file /secrets/DOTENV
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: "bash"
     secretEnv: ["BACKEND_ENV"]
@@ -9,16 +9,16 @@ steps:
         mkdir -p /secrets
         echo "$BACKEND_ENV" > /secrets/DOTENV
 
-  # Step: Build Docker image
+  # Step 2: Build image dari backend
   - name: "gcr.io/cloud-builders/docker"
     dir: "backend"
     args: ["build", "-t", "gcr.io/$PROJECT_ID/tcc-be", "."]
 
-  # Step: Push image
+  # Step 3: Push image ke registry
   - name: "gcr.io/cloud-builders/docker"
     args: ["push", "gcr.io/$PROJECT_ID/tcc-be"]
 
-  # Step: Deploy ke Cloud Run
+  # Step 4: Deploy ke Cloud Run
   - name: "gcr.io/cloud-builders/gcloud"
     args:
       [
