@@ -1,167 +1,273 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { fetchWithAuth } from "../api/fetchWithAuth";
 import Swal from "sweetalert2";
 
-const NotesPage = () => {
-  const [notes, setNotes] = useState([]);
-  const [formData, setFormData] = useState({ title: "", description: "", category: "", date: "" });
-  const [editId, setEditId] = useState(null);
+const BASE_URL = "http://localhost:3000/notes";
 
-  const apiUrl = "https://notes-backend-130852023885.us-central1.run.app";
+const NotesPage = () => {
+  const navigate = useNavigate();
+  const [notes, setNotes] = useState([]);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [date, setDate] = useState("");
+  const [editingNote, setEditingNote] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState(null);
 
   const getAllNotes = async () => {
     try {
-      const response = await fetch(`${apiUrl}/notes`);
-      const { data } = await response.json();
+      setLoading(true);
+      const response = await fetchWithAuth(`${BASE_URL}/notes`);
+      const { data, user } = await response.json();
       setNotes(data);
+      setUser(user);
     } catch (error) {
-      console.error("Error fetching notes:", error);
+      console.error("Gagal mengambil catatan:", error);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    getAllNotes();
-  }, []);
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    editId ? updateNote() : addNote();
-  };
+    const url = editingNote
+      ? `${BASE_URL}/editNotes/${editingNote.id}`
+      : `${BASE_URL}/addNotes`;
+    const method = editingNote ? "PUT" : "POST";
 
-  const addNote = async () => {
     try {
-      const response = await fetch(`${apiUrl}/addNotes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+      const response = await fetchWithAuth(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ title, description, category, date }),
       });
-  
-      if (response.ok) {
-        resetForm();
-        getAllNotes();
-        Swal.fire({
-          title: "Success!",
-          text: "Note has been added.",
-          icon: "success",
-          confirmButtonText: "OK",
-        });
-      } else {
-        throw new Error("Failed to add note");
+
+      if (!response.ok) {
+        throw new Error("Gagal menyimpan catatan.");
       }
-    } catch (error) {
-      console.error("Error adding note:", error);
+
+      await getAllNotes();
+      setTitle("");
+      setDescription("");
+      setCategory("");
+      setDate("");
+      setEditingNote(null);
+
       Swal.fire({
-        title: "Error!",
-        text: "Failed to add note. Please try again.",
+        icon: "success",
+        title: editingNote ? "Catatan berhasil diperbarui!" : "Catatan berhasil ditambahkan!",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      Swal.fire({
         icon: "error",
-        confirmButtonText: "OK",
+        title: "Gagal menyimpan catatan!",
+        text: error.message,
       });
     }
   };
-  
-  const updateNote = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/editNotes/${editId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      });
-  
-      if (response.ok) {
-        resetForm();
-        getAllNotes();
-        Swal.fire({
-          title: "Updated!",
-          text: "Note has been updated successfully.",
-          icon: "success",
-          confirmButtonText: "OK",
-        });
-      } else {
-        throw new Error("Failed to update note");
-      }
-    } catch (error) {
-      console.error("Error updating note:", error);
-      Swal.fire({
-        title: "Error!",
-        text: "Failed to update note. Please try again.",
-        icon: "error",
-        confirmButtonText: "OK",
-      });
-    }
-  };
-  
 
   const handleEdit = (note) => {
-    setFormData(note);
-    setEditId(note.id);
-  };
-
-  const handleCancelEdit = () => {
-    resetForm();
+    setTitle(note.title);
+    setDescription(note.description);
+    setCategory(note.category);
+    setDate(note.date?.slice(0, 10) || "");
+    setEditingNote(note);
   };
 
   const handleDelete = async (id) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
+    const confirm = await Swal.fire({
+      title: "Yakin ingin menghapus?",
+      text: "Catatan yang dihapus tidak bisa dikembalikan.",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
       cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
+      confirmButtonText: "Ya, hapus!",
+      cancelButtonText: "Batal",
     });
-  
-    if (result.isConfirmed) {
+
+    if (confirm.isConfirmed) {
       try {
-        const response = await fetch(`${apiUrl}/Deletenotes/${id}`, { method: "DELETE" });
-        if (!response.ok) throw new Error("Failed to delete note");
-        fetchNotes();
-        Swal.fire("Deleted!", "Your note has been deleted.", "success");
+        const response = await fetchWithAuth(`${BASE_URL}/deleteNotes/${id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Gagal menghapus catatan.");
+        }
+
+        await getAllNotes();
+        Swal.fire({
+          icon: "success",
+          title: "Catatan berhasil dihapus!",
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } catch (error) {
-        console.error(error.message);
+        Swal.fire({
+          icon: "error",
+          title: "Gagal menghapus catatan!",
+          text: error.message,
+        });
       }
     }
   };
-  
 
-  const resetForm = () => {
-    setFormData({ title: "", description: "", category: "", date: "" });
-    setEditId(null);
+  const handleLogout = async () => {
+    const confirm = await Swal.fire({
+      title: "Keluar dari akun?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya, logout",
+      cancelButtonText: "Batal",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const response = await fetch("http://localhost:3000/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Logout gagal");
+      }
+
+      localStorage.removeItem("accessToken");
+
+      Swal.fire({
+        icon: "success",
+        title: "Berhasil logout",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+
+      navigate("/login");
+    } catch (error) {
+      Swal.fire({
+        icon: "error",
+        title: "Gagal logout!",
+        text: error.message,
+      });
+    }
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigate("/login");
+    } else {
+      getAllNotes();
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen bg-blue-800 flex items-center justify-center">
-    <div className="max-w-3xl mx-auto p-6 bg-gray-200 rounded-lg shadow-lg">
-      <h1 className="text-3xl font-bold text-center mb-6 text-blue-600">Notes App</h1>
-      <form onSubmit={handleSubmit} className="mb-6 space-y-4 bg-white p-4 rounded-lg shadow-md">
-        <input type="text" name="title" placeholder="Title" value={formData.title} onChange={handleChange} className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-        <textarea name="description" placeholder="Description" value={formData.description} onChange={handleChange} className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
-        <input type="text" name="category" placeholder="Category" value={formData.category} onChange={handleChange} className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-        <input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
-        <div className="flex space-x-3">
-          <button type="submit" className="w-full p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all">{editId ? "Update Note" : "Add Note"}</button>
-          {editId && (
-            <button type="button" onClick={handleCancelEdit} className="w-full p-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-all">Back</button>
-          )}
-        </div>
-      </form>
-      <div className="space-y-4">
-        {notes.map((note) => (
-          <div key={note.id} className="p-5 border rounded-lg shadow-md bg-white">
-            <h2 className="text-xl font-semibold text-gray-800">{note.title}</h2>
-            <p className="text-gray-700">{note.description}</p>
-            <p className="text-sm text-gray-500">Category: <span className="font-semibold text-gray-600">{note.category}</span> | Date: <span className="font-semibold text-gray-600">{new Date(note.date).toLocaleDateString("id-ID")}</span></p>
-            <div className="flex space-x-3 mt-3">
-              <button onClick={() => handleEdit(note)} className="p-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-all">Edit</button>
-              <button onClick={() => handleDelete(note.id)} className="p-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-all">Delete</button>
-            </div>
-          </div>
-        ))}
+    <div className="container mx-auto p-4 max-w-3xl">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-center">Catatan Saya</h1>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600"
+        >
+          Logout
+        </button>
       </div>
-    </div>
+
+      {user && (
+        <div className="mb-6 text-center">
+          <p className="text-lg font-medium">
+            Selamat datang, <span className="font-bold">{user.name}</span>!
+          </p>
+        </div>
+      )}
+
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow p-4 mb-6 rounded-lg"
+      >
+        <input
+          type="text"
+          placeholder="Judul"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full border p-2 mb-2 rounded"
+          required
+        />
+        <textarea
+          placeholder="Deskripsi"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full border p-2 mb-2 rounded"
+          rows={4}
+          required
+        ></textarea>
+        <input
+          type="text"
+          placeholder="Kategori"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="w-full border p-2 mb-2 rounded"
+          required
+        />
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="w-full border p-2 mb-4 rounded"
+          required
+        />
+        <button
+          type="submit"
+          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+        >
+          {editingNote ? "Update Catatan" : "Tambah Catatan"}
+        </button>
+      </form>
+
+      {loading ? (
+        <p className="text-center text-gray-500">Memuat catatan...</p>
+      ) : notes.length === 0 ? (
+        <p className="text-center text-gray-500">Belum ada catatan.</p>
+      ) : (
+        <div className="grid gap-4">
+          {notes.map((note) => (
+            <div
+              key={note.id}
+              className="bg-white shadow p-4 rounded-lg"
+            >
+              <h2 className="text-xl font-semibold">{note.title}</h2>
+              <p className="text-gray-700 mt-1">{note.description}</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Kategori: {note.category}
+              </p>
+              <p className="text-sm text-gray-500">
+                Tanggal: {note.date?.slice(0, 10)}
+              </p>
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => handleEdit(note)}
+                  className="bg-yellow-400 text-white py-1 px-3 rounded hover:bg-yellow-500"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(note.id)}
+                  className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
+                >
+                  Hapus
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

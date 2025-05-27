@@ -25,10 +25,5 @@ const Notes = db.define('notes', {
     timestamps: true
 });
 
-db.sync().then(() => {
-    console.log("table created");
-}).catch((error) => {
-    console.log("error creating table", error)
-})
 
 export default Notes;

@@ -1,8 +1,14 @@
 steps:
-  # Build Docker image dari folder backend
+  # Build Docker image dari folder backend, bawa env dari secret
   - name: "gcr.io/cloud-builders/docker"
     dir: "backend"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/tcc-be", "."]
+    args: [
+      "build",
+      "-t", "gcr.io/$PROJECT_ID/tcc-be",
+      "--build-arg", "BACKEND_ENV=$BACKEND_ENV",
+      "."
+    ]
+    secretEnv: ["BACKEND_ENV"]
 
   # Push image ke Artifact Registry
   - name: "gcr.io/cloud-builders/docker"
@@ -12,19 +18,18 @@ steps:
   - name: "gcr.io/cloud-builders/gcloud"
     args:
       [
-        "run",
-        "deploy",
-        "be",
-        "--image",
-        "gcr.io/$PROJECT_ID/tcc-be",
-        "--timeout",
-        "1000s",
-        "--port",
-        "5000",
-        "--region",
-        "us-central1",
+        "run", "deploy", "be",
+        "--image", "gcr.io/$PROJECT_ID/tcc-be",
+        "--timeout", "1000s",
+        "--port", "5000",
+        "--region", "us-central1",
         "--allow-unauthenticated"
       ]
+
+availableSecrets:
+  secretManager:
+    - versionName: projects/$PROJECT_ID/secrets/backend-env/versions/latest
+      env: BACKEND_ENV
 
 options:
   logging: CLOUD_LOGGING_ONLY
