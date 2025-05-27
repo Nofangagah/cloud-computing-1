@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { fetchWithAuth } from "../api/fetchWithAuth";
 import Swal from "sweetalert2";
 
-const BASE_URL = "http://localhost:3000/notes";
+const BASE_URL = "https://be-130852023885.us-central1.run.app/notes";
 
 const NotesPage = () => {
   const navigate = useNavigate();
@@ -131,7 +131,7 @@ const NotesPage = () => {
     if (!confirm.isConfirmed) return;
 
     try {
-      const response = await fetch("http://localhost:3000/auth/logout", {
+      const response = await fetch("https://be-130852023885.us-central1.run.app/auth/logout", {
         method: "POST",
         credentials: "include",
       });
