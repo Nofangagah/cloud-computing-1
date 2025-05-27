@@ -13,7 +13,7 @@ const port = process.env.PORT || 3000;
 
 app.use(cookieParser());
 app.use(cors({
-  origin: "http://localhost:8080", 
+  origin: "https://h-07-450914.uc.r.appspot.com", 
   credentials: true
 }));
 
